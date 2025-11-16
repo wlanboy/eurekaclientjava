@@ -14,7 +14,7 @@ jobs:
         distribution: 'temurin'
         cache: maven  
     - name: Build with Maven
-      run: mvn -B package --file eurekaclientjava/pom.xml -DskipTests=true
+      run: mvn -B package --file pom.xml -DskipTests=true
     - name: Publish to Registry
       env:
         DOCKER_USER: ${{secrets.DOCKER_USERNAME}}
@@ -22,6 +22,6 @@ jobs:
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
     - name: Build the Docker image
-      run: docker build -t wlanboy/eurekaclientjava:latest ./eurekaclientjava
+      run: docker build -t wlanboy/eurekaclientjava:latest .
     - name: Docker Push
       run: docker push wlanboy/eurekaclientjava:latest
