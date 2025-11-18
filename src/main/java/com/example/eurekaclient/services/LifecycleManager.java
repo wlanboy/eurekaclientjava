@@ -7,6 +7,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.List;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class LifecycleManager {
+
+    private static final Logger log = LoggerFactory.getLogger(LifecycleManager.class);
 
     private final EurekaClientService eurekaClientService;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
@@ -61,7 +65,6 @@ public class LifecycleManager {
         Gauge.builder("eureka_clients_running", this, lm -> lm.getRunningInstances().size())
             .description("Anzahl aktuell laufender Eureka Clients")
             .register(meterRegistry);
-
     }
 
     public void startLifecycle(ServiceInstance instance) {
@@ -72,13 +75,15 @@ public class LifecycleManager {
         boolean registered = eurekaClientService.registerInstance(instance);
 
         if (registered) {
-            System.out.println("[Lifecycle] Registrierung erfolgreich für " + instance.getServiceName());
-            registrationsCounter.increment();            AtomicBoolean stopEvent = new AtomicBoolean(false);
+            log.info("[Lifecycle] Registrierung erfolgreich für {}", instance.getServiceName());
+            registrationsCounter.increment();
+
+            AtomicBoolean stopEvent = new AtomicBoolean(false);
             stopEvents.put(instance.getId(), stopEvent);
 
             ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
                 if (stopEvent.get()) {
-                    System.out.println("[Lifecycle] Stop-Signal empfangen für " + instance.getServiceName());
+                    log.info("[Lifecycle] Stop-Signal empfangen für {}", instance.getServiceName());
                     return;
                 }
 
@@ -88,11 +93,10 @@ public class LifecycleManager {
                         retryHeartbeat(instance, 1);
                     }
                 } catch (HttpClientErrorException.NotFound nf) {
-                    System.err.printf("[Lifecycle] Heartbeat 404 für %s – erneute Registrierung%n", instance.getServiceName());
+                    log.error("[Lifecycle] Heartbeat 404 für {} – erneute Registrierung", instance.getServiceName(), nf);
                     retryRegister(instance, 0);
                 } catch (Exception e) {
-                    System.err.printf("[Lifecycle] Fehler beim Heartbeat für %s: %s%n",
-                            instance.getServiceName(), e.getMessage());
+                    log.error("[Lifecycle] Fehler beim Heartbeat für {}: {}", instance.getServiceName(), e.getMessage(), e);
                     retryHeartbeat(instance, 1);
                 }
             }, 0, 20, TimeUnit.SECONDS);
@@ -104,13 +108,13 @@ public class LifecycleManager {
             registrationsFailedCounter.increment();
 
             if (attempt >= maxRegisterRetries) {
-                System.err.printf("[Lifecycle] Registrierung endgültig fehlgeschlagen für %s nach %d Versuchen%n",
+                log.error("[Lifecycle] Registrierung endgültig fehlgeschlagen für {} nach {} Versuchen",
                         instance.getServiceName(), attempt);
                 return;
             }
             int nextAttempt = attempt + 1;
             long delay = Math.min(60, (long) Math.pow(2, attempt));
-            System.out.printf("[Lifecycle] Registrierung fehlgeschlagen für %s – neuer Versuch in %d Sekunden (Versuch %d)%n",
+            log.warn("[Lifecycle] Registrierung fehlgeschlagen für {} – neuer Versuch in {} Sekunden (Versuch {})",
                     instance.getServiceName(), delay, nextAttempt);
 
             scheduler.schedule(() -> retryRegister(instance, nextAttempt), delay, TimeUnit.SECONDS);
@@ -119,7 +123,7 @@ public class LifecycleManager {
 
     private void retryHeartbeat(ServiceInstance instance, int attempt) {
         if (attempt > maxHeartbeatRetries) {
-            System.err.printf("[Lifecycle] Heartbeat endgültig fehlgeschlagen für %s nach %d Versuchen%n",
+            log.error("[Lifecycle] Heartbeat endgültig fehlgeschlagen für {} nach {} Versuchen",
                     instance.getServiceName(), attempt - 1);
             heartbeatsFailedCounter.increment();
             return;
@@ -130,12 +134,12 @@ public class LifecycleManager {
         scheduler.schedule(() -> {
             boolean ok = eurekaClientService.sendHeartbeat(instance);
             if (!ok) {
-                System.out.printf("[Lifecycle] Heartbeat Retry %d fehlgeschlagen für %s – neuer Versuch in %d Sekunden%n",
+                log.warn("[Lifecycle] Heartbeat Retry {} fehlgeschlagen für {} – neuer Versuch in {} Sekunden",
                         attempt, instance.getServiceName(), delay);
                 heartbeatsFailedCounter.increment();
                 retryHeartbeat(instance, attempt + 1);
             } else {
-                System.out.printf("[Lifecycle] Heartbeat erfolgreich nach Retry %d für %s%n",
+                log.info("[Lifecycle] Heartbeat erfolgreich nach Retry {} für {}",
                         attempt, instance.getServiceName());
                 heartbeatsCounter.increment();
             }
@@ -152,7 +156,7 @@ public class LifecycleManager {
             future.cancel(true);
         }
         eurekaClientService.deregisterInstance(instance);
-        System.out.println("[Lifecycle] Instanz gestoppt und deregistriert: " + instance.getServiceName());
+        log.info("[Lifecycle] Instanz gestoppt und deregistriert: {}", instance.getServiceName());
     }
 
     public void stopAll(List<ServiceInstance> instances) {

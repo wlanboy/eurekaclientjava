@@ -7,6 +7,8 @@ import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,6 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class ServiceInstanceStore {
+
+    private static final Logger log = LoggerFactory.getLogger(ServiceInstanceStore.class);
 
     private final List<ServiceInstance> instances = new ArrayList<>();
     private final AtomicLong idCounter = new AtomicLong(1);
@@ -37,9 +41,10 @@ public class ServiceInstanceStore {
                     }
                     instances.add(instance);
                 }
-                System.out.println("[Store] " + instances.size() + " Instanzen aus " + jsonFilePath + " geladen.");
+                log.info("[Store] {} Instanzen aus {} geladen.", instances.size(), jsonFilePath);
             }
         } catch (Exception e) {
+            log.error("Konnte services.json nicht laden von {}: {}", jsonFilePath, e.getMessage(), e);
             throw new RuntimeException("Konnte services.json nicht laden von " + jsonFilePath, e);
         }
     }
@@ -60,6 +65,7 @@ public class ServiceInstanceStore {
     public void save(ServiceInstance existing) {
         if (existing.getId() == null) {
             existing.setId(idCounter.getAndIncrement());
+            log.debug("[Store] Neue Instanz-ID {} für Service {}", existing.getId(), existing.getServiceName());
         }
         ServiceInstance found = findByServiceNameAndHostNameAndHttpPort(
                 existing.getServiceName(),
@@ -68,7 +74,9 @@ public class ServiceInstanceStore {
         );
         if (found != null) {
             instances.remove(found);
+            log.info("[Store] Bestehende Instanz {} ersetzt.", existing.getServiceName());
         }
         instances.add(existing);
+        log.info("[Store] Instanz {} gespeichert. Gesamt: {}", existing.getServiceName(), instances.size());
     }
 }

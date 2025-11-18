@@ -11,8 +11,13 @@ import jakarta.annotation.PreDestroy;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @SpringBootApplication
 public class Application {
+
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     private final ServiceInstanceStore store;
     private final LifecycleManager lifecycleManager;
@@ -24,13 +29,14 @@ public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
+        log.info(">>> Eureka Client Application gestartet.");
     }
 
     @PreDestroy
     public void onShutdown() {
-        System.out.println(">>> Anwendung wird heruntergefahren – stoppe alle Eureka Clients...");
+        log.info(">>> Anwendung wird heruntergefahren – stoppe alle Eureka Clients...");
         List<ServiceInstance> allInstances = store.getInstances();
         lifecycleManager.stopAll(allInstances);
-        System.out.println(">>> Alle Clients gestoppt und deregistriert.");
+        log.info(">>> Alle Clients gestoppt und deregistriert.");
     }
 }

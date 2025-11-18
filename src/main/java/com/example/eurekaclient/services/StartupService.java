@@ -5,12 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
 
 @Configuration
 public class StartupService {
+
+    private static final Logger log = LoggerFactory.getLogger(StartupService.class);
 
     @Bean
     public ApplicationRunner importAndStartServices(ServiceInstanceStore store,
@@ -38,24 +42,24 @@ public class StartupService {
                             existing.setStatus(instance.getStatus());
                             existing.setIpAddr(instance.getIpAddr());
                             store.save(existing);
-                            System.out.println("Aktualisiert: " + existing.getServiceName());
+                            log.info("Aktualisiert: {}", existing.getServiceName());
                         } else {
                             store.save(instance);
-                            System.out.println("Neu importiert: " + instance.getServiceName());
+                            log.info("Neu importiert: {}", instance.getServiceName());
                         }
                     }
                 } catch (Exception e) {
-                    System.err.println("Fehler beim Import von services.json: " + e.getMessage());
+                    log.error("Fehler beim Import von services.json: {}", e.getMessage(), e);
                 }
             } else {
-                System.out.println("Keine services.json gefunden – überspringe Import.");
+                log.warn("Keine services.json gefunden – überspringe Import.");
             }
 
             // Jetzt alle Instanzen aus der DB holen und Lifecycle starten
             List<ServiceInstance> allInstances = store.getInstances();
             for (ServiceInstance instance : allInstances) {
                 lifecycleManager.startLifecycle(instance);
-                System.out.println("Lifecycle gestartet für: " + instance.getServiceName());
+                log.info("Lifecycle gestartet für: {}", instance.getServiceName());
             }
         };
     }

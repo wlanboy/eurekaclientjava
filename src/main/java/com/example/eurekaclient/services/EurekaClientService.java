@@ -1,7 +1,12 @@
 package com.example.eurekaclient.services;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,9 +19,21 @@ import org.springframework.web.client.HttpClientErrorException;
 @Service
 public class EurekaClientService {
 
+    private static final Logger log = LoggerFactory.getLogger(EurekaClientService.class);
+
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String eurekaServerUrl = System.getenv()
-            .getOrDefault("EUREKA_SERVER_URL", "http://localhost:8761/eureka/apps/");
+
+    @Value("${EUREKA_SERVER_URL:http://localhost:8761/eureka/apps/}")
+    private String eurekaServerUrl;
+
+    private String getEurekaHost() {
+        try {
+            URI uri = new URI(eurekaServerUrl);
+            return uri.getHost();
+        } catch (Exception e) {
+            return eurekaServerUrl;
+        }
+    }
 
     public String generateInstanceId(ServiceInstance instance) {
         int port = instance.isSslPreferred() ? instance.getSecurePort() : instance.getHttpPort();
@@ -25,6 +42,7 @@ public class EurekaClientService {
 
     public String generateServiceName(ServiceInstance instance) {
         if (instance.getServiceName() == null) {
+            log.warn("ServiceName is null, using UNKNOWN (EurekaHost={})", getEurekaHost());
             return "UNKNOWN";
         }
         return instance.getServiceName().trim().toUpperCase();
@@ -44,8 +62,18 @@ public class EurekaClientService {
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(appUrl, request, String.class);
-            return response.getStatusCode() == HttpStatus.NO_CONTENT;
+            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                log.info("Successfully registered instance {} at {} (EurekaHost={})",
+                        instance.getServiceName(), appUrl, getEurekaHost());
+                return true;
+            } else {
+                log.error("Failed to register instance {}. Status: {} (EurekaHost={})",
+                        instance.getServiceName(), response.getStatusCode(), getEurekaHost());
+                return false;
+            }
         } catch (Exception e) {
+            log.error("Error registering instance {} at {} (EurekaHost={}): {}",
+                    instance.getServiceName(), appUrl, getEurekaHost(), e.getMessage(), e);
             return false;
         }
     }
@@ -55,7 +83,14 @@ public class EurekaClientService {
         String instanceId = generateInstanceId(instance);
         String deregisterUrl = eurekaServerUrl + serviceName + "/" + instanceId;
 
-        restTemplate.delete(deregisterUrl);
+        try {
+            restTemplate.delete(deregisterUrl);
+            log.info("Successfully deregistered instance {} ({}) (EurekaHost={})",
+                    serviceName, instanceId, getEurekaHost());
+        } catch (Exception e) {
+            log.error("Error deregistering instance {} ({}) (EurekaHost={}): {}",
+                    serviceName, instanceId, getEurekaHost(), e.getMessage(), e);
+        }
     }
 
     public boolean sendHeartbeat(ServiceInstance instance) {
@@ -65,26 +100,26 @@ public class EurekaClientService {
 
         try {
             restTemplate.put(heartbeatUrl, null);
-            System.out.printf("[Heartbeat] Erfolgreich für %s (%s)%n", serviceName, instanceId);
+            log.info("[Heartbeat] Erfolgreich für {} ({}) (EurekaHost={})",
+                    serviceName, instanceId, getEurekaHost());
             return true;
         } catch (HttpClientErrorException.NotFound nf) {
-            // 404 → Eureka kennt die Instanz nicht mehr
+            log.error("[Heartbeat] Instance {} ({}) not found in Eureka (EurekaHost={})",
+                    serviceName, instanceId, getEurekaHost(), nf);
             throw nf;
         } catch (Exception e) {
-            System.err.printf("[Heartbeat] Fehler für %s (%s): %s%n",
-                    serviceName, instanceId, e.getMessage());
+            log.error("[Heartbeat] Fehler für {} ({}): {} (EurekaHost={})",
+                    serviceName, instanceId, e.getMessage(), getEurekaHost(), e);
             return false;
         }
     }
 
     private String buildXmlPayload(ServiceInstance instance) {
-        // Entscheide, ob SSL bevorzugt wird
         boolean ssl = instance.isSslPreferred();
 
         String portEnabled = ssl ? "false" : "true";
         String secureEnabled = ssl ? "true" : "false";
 
-        // Wähle Protokoll und Port
         String protocol = ssl ? "https" : "http";
         int port = ssl ? instance.getSecurePort() : instance.getHttpPort();
 
@@ -119,5 +154,4 @@ public class EurekaClientService {
                 protocol, instance.getHostName(), port,
                 instance.getDataCenterInfoName());
     }
-
 }
