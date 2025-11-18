@@ -90,11 +90,15 @@ public class LifecycleManager {
                 try {
                     boolean ok = eurekaClientService.sendHeartbeat(instance);
                     if (!ok) {
-                        retryHeartbeat(instance, 1);
+                        CompletableFuture.delayedExecutor(4, TimeUnit.SECONDS).execute(() -> {
+                            retryHeartbeat(instance, 1);
+                        });
                     }
                 } catch (HttpClientErrorException.NotFound nf) {
                     log.error("[Lifecycle] Heartbeat 404 für {} – erneute Registrierung", instance.getServiceName(), nf);
-                    retryRegister(instance, 0);
+                    CompletableFuture.delayedExecutor(4, TimeUnit.SECONDS).execute(() -> {
+                            retryRegister(instance, 0);
+                        });
                 } catch (Exception e) {
                     log.error("[Lifecycle] Fehler beim Heartbeat für {}: {}", instance.getServiceName(), e.getMessage(), e);
                     retryHeartbeat(instance, 1);
