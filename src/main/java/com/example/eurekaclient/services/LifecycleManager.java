@@ -22,6 +22,7 @@ public class LifecycleManager {
     private static final Logger log = LoggerFactory.getLogger(LifecycleManager.class);
 
     private final EurekaClientService eurekaClientService;
+    private final ServiceInstanceStore serviceInstanceStore;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
 
     private final Counter registrationsCounter;
@@ -40,8 +41,9 @@ public class LifecycleManager {
     @Value("${lifecycle.heartbeat.retry.max:50}")
     private int maxHeartbeatRetries;
 
-    public LifecycleManager(EurekaClientService eurekaClientService, MeterRegistry meterRegistry) {
+    public LifecycleManager(EurekaClientService eurekaClientService, MeterRegistry meterRegistry, ServiceInstanceStore serviceInstanceStore) {
         this.eurekaClientService = eurekaClientService;
+        this.serviceInstanceStore = serviceInstanceStore;
 
         // Counter für Registrierungen
         this.registrationsCounter = Counter.builder("eureka_registrations_total")
@@ -64,6 +66,11 @@ public class LifecycleManager {
         // Gauge für aktuell laufende Clients
         Gauge.builder("eureka_clients_running", this, lm -> lm.getRunningInstances().size())
             .description("Anzahl aktuell laufender Eureka Clients")
+            .register(meterRegistry);
+
+        // Gauge für aktuell konfigurierte Clients
+        Gauge.builder("eureka_clients_configured", this, is -> is.getConfiguredInstances())
+            .description("Anzahl aktuell konfigurierten Eureka Clients")
             .register(meterRegistry);
     }
 
@@ -172,5 +179,9 @@ public class LifecycleManager {
 
     public List<ServiceInstance> getRunningInstances() {
         return instanceMap.values().stream().collect(Collectors.toList());
+    }
+
+    private int getConfiguredInstances() {
+        return serviceInstanceStore.getInstances().size();
     }
 }
