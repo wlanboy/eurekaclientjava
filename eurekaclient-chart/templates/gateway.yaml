@@ -9,7 +9,7 @@ spec:
   servers:
     - port:
         number: 443
-        name: http
+        name: https
         protocol: HTTPS
       hosts:
         - {{ .Values.hostName }}
