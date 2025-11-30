@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.deploymentName }}-config
 data:
   application.properties: |
-    eureka.client.serviceUrl.defaultZone=http://gmk.lan:8761/eureka/
+    EUREKA_SERVER_URL=http://gmk.lan:8761/eureka/
     server.port=8080
     lifecycle.retry.max=50
     lifecycle.heartbeat.retry.max=50
