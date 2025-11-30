@@ -21,7 +21,7 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /application.properties
-              subPath: application.properties
+              subPath: /app/application.properties
             - name: service-volume
               mountPath: /app/services.json
               subPath: services.json

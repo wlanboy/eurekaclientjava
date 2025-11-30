@@ -5,4 +5,4 @@ COPY target/eurekaclient-0.0.1-SNAPSHOT.jar /app/eurekaclient.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/eurekaclient.jar"]
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/eurekaclient.jar", "--spring.config.location=file:/app/application.properties"]
