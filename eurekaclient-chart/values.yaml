@@ -16,6 +16,6 @@ service:
 certmanager:
   issuer: local-ca-issuer
   kind: ClusterIssuer
-  secretName: mirrorapi-tls
+  secretName: eurekaclientjava-tls
 
 resources: {}
