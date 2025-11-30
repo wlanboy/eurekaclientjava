@@ -20,8 +20,8 @@ spec:
             - containerPort: 8080
           volumeMounts:
             - name: config-volume
-              mountPath: /application.properties
-              subPath: /app/application.properties
+              mountPath: /app/application.properties
+              subPath: application.properties
             - name: service-volume
               mountPath: /app/services.json
               subPath: services.json
