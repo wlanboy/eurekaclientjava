@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-deployment
+  name: {{ .Values.deploymentName }}-deployment
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      app: {{ .Values.deploymentName }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
+        app: {{ .Values.deploymentName }}
     spec:
       containers:
-        - name: eurekaclient
+        - name: {{ .Values.deploymentName }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -25,12 +25,16 @@ spec:
             - name: service-volume
               mountPath: /app/services.json
               subPath: services.json
+            - name: tmp-volume
+              mountPath: /tmp
           command: ["java"]
           args: ["-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/eurekaclient.jar"]
       volumes:
         - name: config-volume
           configMap:
-            name: {{ .Release.Name }}-config
+            name: {{ .Values.deploymentName }}-config
         - name: service-volume
           configMap:
-            name: {{ .Release.Name }}-service
+            name: {{ .Values.deploymentName }}-service
+        - name: tmp-volume
+          emptyDir: {}

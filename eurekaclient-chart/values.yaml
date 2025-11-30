@@ -1,4 +1,8 @@
 replicaCount: 1
+hostName: eurekaclient.tp.lan
+deploymentName: eurekaclient
+namespace: eureka
+gateWayNamespace: istio-ingress
 
 image:
   repository: wlanboy/eurekaclientjava
@@ -8,5 +12,10 @@ image:
 service:
   type: ClusterIP
   port: 8080
+
+certmanager:
+  issuer: local-ca-issuer
+  kind: ClusterIssuer
+  secretName: mirrorapi-tls
 
 resources: {}
