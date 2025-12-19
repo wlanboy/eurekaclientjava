@@ -62,15 +62,20 @@ public class ServiceInstanceStore {
                 .orElse(null);
     }
 
+    public ServiceInstance findByServiceName(String serviceName) {
+        return instances.stream()
+                .filter(i -> i.getServiceName().equalsIgnoreCase(serviceName))
+                .findFirst()
+                .orElse(null);
+    }
+
     public void save(ServiceInstance existing) {
         if (existing.getId() == null) {
             existing.setId(idCounter.getAndIncrement());
             log.debug("[Store] Neue Instanz-ID {} für Service {}", existing.getId(), existing.getServiceName());
         }
-        ServiceInstance found = findByServiceNameAndHostNameAndHttpPort(
-                existing.getServiceName(),
-                existing.getHostName(),
-                existing.getHttpPort()
+        ServiceInstance found = findByServiceName(
+                existing.getServiceName()
         );
         if (found != null) {
             instances.remove(found);
