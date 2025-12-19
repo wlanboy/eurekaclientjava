@@ -57,6 +57,22 @@ docker run --rm -p 8080:8080 \
   wlanboy/eurekaclientjava:latest
 ```
 
+# Update hostname and port of running instance
+```bash
+http://localhost:8761/eureka/apps/DUMMY-SERVICE
+
+curl -X PUT "http://localhost:8080/instances/update" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceName": "DUMMY-SERVICE",
+    "newHostName": "localhost",
+    "newIpAddress": "127.0.0.1",
+    "httpPort": 8080,
+    "securePort": 7443,
+    "sslPreferred": false
+  }'
+````
+
 # Helm install
 ```bash
 kubectl create namespace eurekaclient
