@@ -184,4 +184,32 @@ public class LifecycleManager {
     private int getConfiguredInstances() {
         return serviceInstanceStore.getInstances().size();
     }
+
+    public ServiceInstance updateInstance(UpdateInstanceRequest request) {
+        ServiceInstance instance = serviceInstanceStore.findByServiceName(
+                request.getServiceName()                
+        );
+
+            if (instance != null) {
+            stopLifecycle(instance);
+
+            instance.setHostName(request.getNewHostName());
+            instance.setIpAddr(request.getNewIpAddress());
+            instance.setHttpPort(request.getHttpPort());
+            instance.setSecurePort(request.getSecurePort());
+            instance.setSslPreferred(request.isSslPreferred());
+            
+            serviceInstanceStore.save(instance);
+
+            startLifecycle(instance);
+
+            log.info("[Controller] Instanz {} aktualisiert: Host={}, IP={}, SecurePort={}, SSL={}",
+                    request.getServiceName(),
+                    request.getNewHostName(),
+                    request.getNewIpAddress(),
+                    request.getSecurePort(),
+                    request.isSslPreferred());
+        }
+        return instance;
+    }
 }
