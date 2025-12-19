@@ -27,6 +27,6 @@
     "ipAddr": "127.0.0.1",
     "dataCenterInfoName": "MyOwn",
     "status": "UP",
-    "sslPreferred": true
+    "sslPreferred": false
   }
 ]
