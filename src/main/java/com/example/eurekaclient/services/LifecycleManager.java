@@ -1,7 +1,7 @@
 package com.example.eurekaclient.services;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
 import io.micrometer.core.instrument.Counter;
@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class LifecycleManager {
 
     private static final Logger log = LoggerFactory.getLogger(LifecycleManager.class);
