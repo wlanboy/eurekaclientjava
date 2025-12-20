@@ -68,6 +68,7 @@ public class EurekaClientService {
             } else {
                 log.error("Failed to register instance {}. Status: {} (EurekaHost={})",
                         instance.getServiceName(), response.getStatusCode(), getEurekaHost());
+                log.error(response.getBody());
                 return false;
             }
         } catch (Exception e) {
