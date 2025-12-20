@@ -12,7 +12,9 @@ spec:
         name: https
         protocol: HTTPS
       hosts:
-        - {{ .Values.hostName }}
+      {{- range .Values.hosts }}
+        - {{ . }}
+      {{- end }}
       tls:
         mode: SIMPLE
         credentialName: {{ .Values.certmanager.secretName }}

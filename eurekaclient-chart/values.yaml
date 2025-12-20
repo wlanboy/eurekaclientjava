@@ -1,5 +1,7 @@
 replicaCount: 1
-hostName: eurekaclient.tp.lan
+hosts: 
+  - eurekaclient.tp.lan
+  - eurekaclient.gmk.lan
 deploymentName: eurekaclient
 namespace: eureka
 gateWayNamespace: istio-ingress
