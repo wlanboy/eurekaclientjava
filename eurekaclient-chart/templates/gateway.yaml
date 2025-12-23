@@ -7,6 +7,7 @@ spec:
   selector:
     istio: ingressgateway
   servers:
+    {{- if .Values.certmanager.enabled }}
     - port:
         number: 443
         name: https
@@ -18,3 +19,4 @@ spec:
       tls:
         mode: SIMPLE
         credentialName: {{ .Values.certmanager.secretName }}
+    {{- end }}

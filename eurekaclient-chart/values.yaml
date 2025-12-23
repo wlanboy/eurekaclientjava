@@ -16,6 +16,7 @@ service:
   port: 8080
 
 certmanager:
+  enabled: true
   issuer: local-ca-issuer
   kind: ClusterIssuer
   secretName: eurekaclient-tls
