@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.mockito.Mockito.*;
 
@@ -16,10 +16,10 @@ import java.util.List;
 @TestPropertySource("classpath:application-test.properties")
 class StartupServiceTest {
 
-    @MockBean
+    @MockitoBean
     private LifecycleManager lifecycleManager;
 
-    @MockBean
+    @MockitoBean
     private ServiceInstanceStore store;
 
     @Autowired
