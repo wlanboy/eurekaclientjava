@@ -43,6 +43,8 @@ docker run --rm -p 8080:8080 \
   --network host \
   -v $(pwd)/services.json:/app/services.json \
   -v $(pwd)/application.properties:/app/application.properties \
+  -e store.json.path=file:./services.json \
+  -e EUREKA_SERVER_URL=http://gmk.lan:8761/eureka/apps/ \
   --name eurekaclient \
   eurekaclient:latest
 ```
@@ -53,6 +55,8 @@ docker run --rm -p 8080:8080 \
   --network host \
   -v $(pwd)/services.json:/app/services.json \
   -v $(pwd)/application.properties:/app/application.properties \
+  -e store.json.path=file:./services.json \
+  -e EUREKA_SERVER_URL=http://gmk.lan:8761/eureka/apps/ \
   --name eurekaclient \
   wlanboy/eurekaclientjava:latest
 ```
