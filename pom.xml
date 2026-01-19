@@ -17,6 +17,7 @@
 
 	<properties>
 		<java.version>25</java.version>
+		<start-class>com.example.eurekaclient.Application</start-class>
 	</properties>
 
 	<dependencies>
