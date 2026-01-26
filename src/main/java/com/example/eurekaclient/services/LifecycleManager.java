@@ -179,6 +179,12 @@ public class LifecycleManager {
         scheduler.shutdown();
     }
 
+    public void stopAllRunning() {
+        List<ServiceInstance> running = getRunningInstances();
+        running.forEach(this::stopLifecycle);
+        log.info("[Lifecycle] Alle {} laufenden Instanzen gestoppt", running.size());
+    }
+
     public List<ServiceInstance> getRunningInstances() {
         return List.copyOf(instanceMap.values());
     }
