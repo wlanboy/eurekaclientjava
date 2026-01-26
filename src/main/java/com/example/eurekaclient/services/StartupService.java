@@ -7,42 +7,52 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
-@Configuration
+@Service
 public class StartupService {
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final ServiceInstanceStore store;
 
     @Value("${store.json.path}")
     private Resource storeJsonResource;
 
+    public StartupService(ServiceInstanceStore store) {
+        this.store = store;
+    }
+
     @Bean
-    public ApplicationRunner importAndStartServices(ServiceInstanceStore store,
-                                                    LifecycleManager lifecycleManager) {
+    public ApplicationRunner importAndStartServices(LifecycleManager lifecycleManager) {
         return args -> {
-
-            String json = new String(storeJsonResource.getInputStream().readAllBytes());
-
-            if (json.length() > 0) {
-                importServices(json, store);
-            } else {
-                log.warn("Keine services.json gefunden – überspringe Import.");
-            }
-
-            // Lifecycle für alle Instanzen starten
-            store.getInstances().forEach(instance -> {
-                lifecycleManager.startLifecycle(instance);
-                log.info("Lifecycle gestartet für: {}", instance.getServiceName());
-            });
+            loadAndImportServices();
+            startAllLifecycles(lifecycleManager);
         };
     }
 
-    private void importServices(String json, ServiceInstanceStore store) {
+    public void loadAndImportServices() throws IOException {
+        String json = new String(storeJsonResource.getInputStream().readAllBytes());
+
+        if (json.length() > 0) {
+            importServices(json);
+        } else {
+            log.warn("Keine services.json gefunden – überspringe Import.");
+        }
+    }
+
+    public void startAllLifecycles(LifecycleManager lifecycleManager) {
+        store.getInstances().forEach(instance -> {
+            lifecycleManager.startLifecycle(instance);
+            log.info("Lifecycle gestartet für: {}", instance.getServiceName());
+        });
+    }
+
+    private void importServices(String json) {
         try {
             List<ServiceInstance> instances = mapper.readValue(
                     json,
@@ -50,7 +60,7 @@ public class StartupService {
             );
 
             for (ServiceInstance instance : instances) {
-                ServiceInstance existing = store.findByServiceNameAndHostNameAndHttpPort(
+                ServiceInstance existing = this.store.findByServiceNameAndHostNameAndHttpPort(
                         instance.getServiceName(),
                         instance.getHostName(),
                         instance.getHttpPort()
@@ -58,10 +68,10 @@ public class StartupService {
 
                 if (existing != null) {
                     updateExistingInstance(existing, instance);
-                    store.save(existing);
+                    this.store.save(existing);
                     log.info("Aktualisiert: {}", existing.getServiceName());
                 } else {
-                    store.save(instance);
+                    this.store.save(instance);
                     log.info("Neu importiert: {}", instance.getServiceName());
                 }
             }
