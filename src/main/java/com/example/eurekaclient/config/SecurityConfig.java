@@ -18,6 +18,7 @@ public class SecurityConfig {
         return http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/instances/**").access(anyOf(hasIpAddress("127.0.0.1"), hasIpAddress("::1")))
+                        .requestMatchers("/actuator/refresh").access(anyOf(hasIpAddress("127.0.0.1"), hasIpAddress("::1")))
                         .anyRequest().permitAll()
                 )
                 .csrf(csrf -> csrf.disable())
