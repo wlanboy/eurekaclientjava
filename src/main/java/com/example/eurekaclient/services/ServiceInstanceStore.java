@@ -45,4 +45,9 @@ public class ServiceInstanceStore {
 
         log.info("[Store] Instanz {} gespeichert. Gesamt: {}", instance.getServiceName(), instances.size());
     }
+
+    public synchronized void clear() {
+        instances.clear();
+        log.info("[Store] Alle Instanzen gelöscht");
+    }
 }
