@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/instances")
@@ -16,6 +18,16 @@ import org.springframework.web.bind.annotation.*;
 public class ServiceInstanceController {
 
     private final LifecycleManager lifecycleManager;
+
+    @GetMapping("/configured")
+    public ResponseEntity<List<ServiceInstance>> getConfiguredInstances() {
+        return ResponseEntity.ok(lifecycleManager.getConfiguredInstances());
+    }
+
+    @GetMapping("/running")
+    public ResponseEntity<List<ServiceInstance>> getRunningInstances() {
+        return ResponseEntity.ok(lifecycleManager.getRunningInstances());
+    }
 
     @PutMapping("/update")
     public ResponseEntity<String> updateInstance(@RequestBody UpdateInstanceRequest request) {
