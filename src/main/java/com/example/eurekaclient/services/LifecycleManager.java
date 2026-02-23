@@ -69,7 +69,7 @@ public class LifecycleManager {
                 .description("Anzahl aktuell laufender Eureka Clients")
                 .register(meterRegistry);
 
-        Gauge.builder("eureka_clients_configured", this, lm -> lm.getConfiguredInstances())
+        Gauge.builder("eureka_clients_configured", this, lm -> lm.getConfiguredInstances().size())
                 .description("Anzahl aktuell konfigurierter Eureka Clients")
                 .register(meterRegistry);
     }
@@ -189,8 +189,8 @@ public class LifecycleManager {
         return List.copyOf(instanceMap.values());
     }
 
-    private int getConfiguredInstances() {
-        return serviceInstanceStore.getInstances().size();
+    public List<ServiceInstance> getConfiguredInstances() {
+        return serviceInstanceStore.getInstances();
     }
 
     public ServiceInstance updateInstance(UpdateInstanceRequest request) {
