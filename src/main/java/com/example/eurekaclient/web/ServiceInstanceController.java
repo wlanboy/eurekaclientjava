@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -89,6 +90,14 @@ public class ServiceInstanceController {
             )
         ),
         @ApiResponse(
+            responseCode = "400",
+            description = "Ungültige Eingabe – Pflichtfelder fehlen oder Werte außerhalb des erlaubten Bereichs.",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(type = "object", example = "{\"httpPort\": \"httpPort muss zwischen 1 und 65535 liegen\"}")
+            )
+        ),
+        @ApiResponse(
             responseCode = "404",
             description = "Keine konfigurierte Instance mit dem angegebenen serviceName gefunden.",
             content = @Content(
@@ -104,7 +113,7 @@ public class ServiceInstanceController {
             required = true,
             content = @Content(schema = @Schema(implementation = UpdateInstanceRequest.class))
         )
-        UpdateInstanceRequest request
+        @org.springframework.web.bind.annotation.RequestBody @Valid UpdateInstanceRequest request
     ) {
 
         log.info("Update-Request für ServiceInstance: {}", request.getServiceName());
