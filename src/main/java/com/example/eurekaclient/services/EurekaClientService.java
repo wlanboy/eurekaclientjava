@@ -121,6 +121,14 @@ public class EurekaClientService {
         String protocol = ssl ? "https" : "http";
         int port = ssl ? instance.getSecurePort() : instance.getHttpPort();
 
+        String instanceId  = escapeXml(generateInstanceId(instance));
+        String hostName    = escapeXml(instance.getHostName());
+        String serviceName = escapeXml(instance.getServiceName());
+        String serviceNameLower = escapeXml(instance.getServiceName() != null ? instance.getServiceName().toLowerCase() : "");
+        String ipAddr      = escapeXml(instance.getIpAddr());
+        String status      = escapeXml(instance.getStatus());
+        String dataCenterInfoName = escapeXml(instance.getDataCenterInfoName() != null ? instance.getDataCenterInfoName() : "MyOwn");
+
         return """
                 <instance>
                   <instanceId>%s</instanceId>
@@ -140,20 +148,30 @@ public class EurekaClientService {
                   </dataCenterInfo>
                 </instance>
                 """.formatted(
-                generateInstanceId(instance),
-                instance.getHostName(),
-                instance.getServiceName(),
-                instance.getIpAddr(),
-                instance.getServiceName().toLowerCase(),
-                instance.getServiceName().toLowerCase(),
-                instance.getStatus(),
+                instanceId,
+                hostName,
+                serviceName,
+                ipAddr,
+                serviceNameLower,
+                serviceNameLower,
+                status,
                 ssl ? "false" : "true",
                 instance.getHttpPort(),
                 ssl ? "true" : "false",
                 instance.getSecurePort(),
-                protocol, instance.getHostName(), port,
-                protocol, instance.getHostName(), port,
-                protocol, instance.getHostName(), port,
-                instance.getDataCenterInfoName());
+                protocol, hostName, port,
+                protocol, hostName, port,
+                protocol, hostName, port,
+                dataCenterInfoName);
+    }
+
+    private static String escapeXml(String value) {
+        if (value == null) return "";
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 }
