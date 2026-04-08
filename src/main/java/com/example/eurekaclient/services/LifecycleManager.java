@@ -203,10 +203,18 @@ public class LifecycleManager {
 
         stopLifecycle(instance);
 
-        instance.setHostName(request.getNewHostName());
-        instance.setIpAddr(request.getNewIpAddress());
-        instance.setHttpPort(request.getHttpPort());
-        instance.setSecurePort(request.getSecurePort());
+        if (request.getNewHostName() != null && !request.getNewHostName().isBlank()) {
+            instance.setHostName(request.getNewHostName().trim());
+        }
+        if (request.getNewIpAddress() != null && !request.getNewIpAddress().isBlank()) {
+            instance.setIpAddr(request.getNewIpAddress().trim());
+        }
+        if (request.getHttpPort() >= 1 && request.getHttpPort() <= 65535) {
+            instance.setHttpPort(request.getHttpPort());
+        }
+        if (request.getSecurePort() >= 0 && request.getSecurePort() <= 65535) {
+            instance.setSecurePort(request.getSecurePort());
+        }
         instance.setSslPreferred(request.isSslPreferred());
 
         serviceInstanceStore.save(instance);
