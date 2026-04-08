@@ -2,12 +2,19 @@ package com.example.eurekaclient.services;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class RestTemplateConfig {
+
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    RestClient restClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5_000);
+        factory.setReadTimeout(10_000);
+        return RestClient.builder()
+                .requestFactory(factory)
+                .build();
     }
 }
