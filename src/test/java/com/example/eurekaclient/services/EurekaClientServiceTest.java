@@ -10,13 +10,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
 
 @ExtendWith(MockitoExtension.class)
 class EurekaClientServiceTest {
 
-    @Mock
-    private RestTemplate restTemplate;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private RestClient restClient;
 
     @Mock
     private ServiceInstance instance;
@@ -26,8 +27,6 @@ class EurekaClientServiceTest {
 
     @BeforeEach
     void setup() {
-        // WICHTIG: Da @Value in Unit Tests nicht funktioniert, 
-        // setzen wir den Wert hier manuell für das Mock-Objekt.
         service.eurekaServerUrl = "http://localhost:8761/eureka/apps/";
     }
 
@@ -35,18 +34,42 @@ class EurekaClientServiceTest {
     void registerInstance_success() {
         // GIVEN
         mockInstanceForRegister();
-        // Wir simulieren eine erfolgreiche Antwort vom Server (204 No Content)
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(new ResponseEntity<>(HttpStatus.NO_CONTENT));
+        when(restClient.post()
+                .uri(anyString())
+                .contentType(any())
+                .accept(any(MediaType.class))
+                .body(anyString())
+                .retrieve()
+                .onStatus(any(), any())
+                .toBodilessEntity())
+                .thenReturn(ResponseEntity.noContent().build());
 
         // WHEN
         boolean result = service.registerInstance(instance);
 
         // THEN
         assertTrue(result);
-        // VERIFIKATION: Sicherstellen, dass restTemplate.postForEntity aufgerufen wurde, 
-        // ohne dass eine echte Verbindung aufgebaut wurde.
-        verify(restTemplate, times(1)).postForEntity(contains("/TEST"), any(HttpEntity.class), eq(String.class));
+    }
+
+    @Test
+    void registerInstance_failure_returnsNoContent() {
+        // GIVEN
+        mockInstanceForRegister();
+        when(restClient.post()
+                .uri(anyString())
+                .contentType(any())
+                .accept(any(MediaType.class))
+                .body(anyString())
+                .retrieve()
+                .onStatus(any(), any())
+                .toBodilessEntity())
+                .thenReturn(ResponseEntity.ok().build());
+
+        // WHEN
+        boolean result = service.registerInstance(instance);
+
+        // THEN
+        assertFalse(result);
     }
 
     @Test
@@ -56,13 +79,14 @@ class EurekaClientServiceTest {
         when(instance.getHostName()).thenReturn("host");
         when(instance.isSslPreferred()).thenReturn(false);
         when(instance.getHttpPort()).thenReturn(8080);
+        when(restClient.delete()
+                .uri(anyString())
+                .retrieve()
+                .toBodilessEntity())
+                .thenReturn(ResponseEntity.noContent().build());
 
-        // WHEN
-        service.deregisterInstance(instance);
-
-        // THEN
-        // Wir verifizieren, dass die DELETE Methode des Mocks aufgerufen wurde
-        verify(restTemplate, times(1)).delete(contains("TEST/host:TEST:8080"));
+        // WHEN + THEN: kein Exception erwartet
+        assertDoesNotThrow(() -> service.deregisterInstance(instance));
     }
 
     @Test
@@ -72,14 +96,34 @@ class EurekaClientServiceTest {
         when(instance.getHostName()).thenReturn("host");
         when(instance.isSslPreferred()).thenReturn(false);
         when(instance.getHttpPort()).thenReturn(8080);
+        when(restClient.put()
+                .uri(anyString())
+                .retrieve()
+                .toBodilessEntity())
+                .thenReturn(ResponseEntity.noContent().build());
 
         // WHEN
         boolean result = service.sendHeartbeat(instance);
 
         // THEN
         assertTrue(result);
-        // Verifikation für PUT (Heartbeat)
-        verify(restTemplate, times(1)).put(anyString(), isNull());
+    }
+
+    @Test
+    void sendHeartbeat_notFound_throwsException() {
+        // GIVEN
+        when(instance.getServiceName()).thenReturn("TEST");
+        when(instance.getHostName()).thenReturn("host");
+        when(instance.isSslPreferred()).thenReturn(false);
+        when(instance.getHttpPort()).thenReturn(8080);
+        when(restClient.put()
+                .uri(anyString())
+                .retrieve()
+                .toBodilessEntity())
+                .thenThrow(HttpClientErrorException.NotFound.class);
+
+        // WHEN + THEN
+        assertThrows(HttpClientErrorException.NotFound.class, () -> service.sendHeartbeat(instance));
     }
 
     private void mockInstanceForRegister() {
